@@ -7,6 +7,10 @@ import os
 import re
 from googletrans import Translator
 
+def swap(arr, index, index2):
+    temp = arr[index]
+    arr[index] = arr[index2]
+    arr[index2] = temp
 
 local_timezone = datetime.utcnow().astimezone().utcoffset()
             #Read which time one gets home
@@ -41,14 +45,24 @@ FreeNames = body_of_tableXML.find_all('td')
 FreeNamesClean = ''
 for j in range(len(FreeNames)):
     if(j%3 == 0):   
-        FreeNamesClean += (re.sub('</*td>',"",str(FreeNames[j]))).replace(" ","")
-FreeNamesClean = FreeNamesClean.split('-')
+        FreeNamesClean += (re.sub('</*td>'," ",str(FreeNames[j]))).replace('-',"")
+FreeNamesClean = FreeNamesClean.split("  ")
 
-
-#Translate from Arabic DS
+            #Translate from Arabic DS
 translator = Translator()
-# for i in FreeNamesClean:
-#     (translator.translate('hi'))
+FreeNamesCleanTranslated = []
+for i in FreeNamesClean:
+    FreeNamesCleanTranslated.append(translator.translate(text=i).text)
+FreeNamesClean = FreeNamesCleanTranslated
+FreeNamesClean = np.array(FreeNamesClean, dtype='<U25')
+FreeNamesClean[0] = 'Qatar'
+FreeNamesClean[FreeNamesClean == 'United State'] = 'United States of America'
+FreeNamesClean[FreeNamesClean == 'Wells'] = 'Wales'
+swap(FreeNamesClean,-6,-4)
+swap(FreeNamesClean,-5,-3)
+
+
+
 
             #Output the matches and analytics we need
 numberOfFreeGames = 0
@@ -65,9 +79,10 @@ for i,j in zip(range(0,numberofgames,2),range(numberofgames)): # j is for regula
         numberofgamesWatched+=1
         if(j >= 60 and j!=63): #Finals are all free except losers final
              numberOfFreeGames += 1
-        if((Names[i].contents[0] == FreeNamesClean[FreeGameIndex] and Names[i+1].contents[0] == FreeNamesClean[FreeGameIndex+1])): #Free matches collected from goal.com DS
-             numberOfFreeGames += 1
-             FreeGameIndex += 2
+        if(j < 47):
+            if((Names[i].contents[0] == FreeNamesClean[FreeGameIndex] and Names[i+1].contents[0] == FreeNamesClean[FreeGameIndex+1])): #Free matches collected from goal.com DS
+                numberOfFreeGames += 1
+                FreeGameIndex += 2
         if(j >= 48 and j<=55 and numberOfFreeRO16Games < 5): # 5 free matches from round of 16
             numberOfFreeRO16Games+=1
         if(j >= 56 and j<=59 and numberOfFreeQfGames < 3): 
